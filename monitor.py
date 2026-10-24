@@ -210,10 +210,12 @@ def sync():
     errors = {}
     page_updates = {}
     for series in SERIES:
-        # Always refresh the whole currently accessible FRED window. This detects
-        # revisions anywhere in it and never deletes older locally saved history.
+        # Recheck a 60-day overlap to catch recent revisions without downloading
+        # the entire FRED graph on every GitHub Actions run.
         try:
-            incoming[series] = fetch(series)
+            previous_dates = [r["date"] for r in existing if r["series"] == series]
+            start = (Date.fromisoformat(max(previous_dates)) - timedelta(days=60)).isoformat() if previous_dates else None
+            incoming[series] = fetch(series, start=start)
             page_updates[series] = None
             for _ in range(2):
                 try:
