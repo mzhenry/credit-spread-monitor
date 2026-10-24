@@ -7,7 +7,7 @@ import csv
 import io
 import json
 import re
-import time
+import subprocess
 from datetime import date as Date, datetime, timezone, timedelta
 from pathlib import Path
 from urllib.error import URLError
@@ -24,15 +24,23 @@ def now_utc():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def get_text(url, timeout=40):
-    for attempt in range(3):
+def get_text(url, timeout=15):
+    try:
+        with urlopen(Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=timeout) as response:
+            return response.read().decode("utf-8-sig", "ignore")
+    except (URLError, TimeoutError) as first_error:
+        # curl uses a different HTTP stack and can reach FRED when urllib stalls
+        # on hosted runners. Keep the total wait bounded so failures are visible.
         try:
-            with urlopen(Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=timeout) as response:
-                return response.read().decode("utf-8-sig", "ignore")
-        except (URLError, TimeoutError):
-            if attempt == 2:
-                raise
-            time.sleep(attempt + 1)
+            result = subprocess.run(
+                ["curl", "--http1.1", "--fail", "--location", "--silent", "--show-error",
+                 "--connect-timeout", "10", "--max-time", "25", "--retry", "1",
+                 "--user-agent", "Mozilla/5.0", url],
+                capture_output=True, check=True, timeout=55,
+            )
+            return result.stdout.decode("utf-8-sig", "ignore")
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as curl_error:
+            raise RuntimeError(f"FRED request failed (urllib: {first_error}; curl: {curl_error})") from curl_error
 
 
 def read_csv(path):
@@ -217,17 +225,21 @@ def sync():
             start = (Date.fromisoformat(max(previous_dates)) - timedelta(days=60)).isoformat() if previous_dates else None
             incoming[series] = fetch(series, start=start)
             page_updates[series] = None
-            for _ in range(2):
-                try:
-                    page_updates[series] = fetch_page_update(series)
-                    if page_updates[series]:
-                        break
-                except Exception:
-                    pass
+            try:
+                page_updates[series] = fetch_page_update(series)
+            except Exception:
+                pass
         except Exception as exc:
             errors[series] = str(exc)
     if errors:
-        append_jsonl(DATA / "runs.jsonl", dict(checked_utc=seen_at, status="failed", errors=errors))
+        latest_saved = {s: max((r["date"] for r in existing if r["series"] == s), default=None) for s in SERIES}
+        failed_status = dict(checked_utc=seen_at, status="failed",
+                             latest_observation_date=latest_saved, new_rows=0, revised_rows=0,
+                             errors=errors, fred_page_updated=page_updates,
+                             source_update_note="FRED download failed; saved observations were not treated as new data")
+        (DATA / "status.json").write_text(json.dumps(failed_status, ensure_ascii=False, indent=2), encoding="utf-8")
+        append_jsonl(DATA / "runs.jsonl", failed_status)
+        build_dashboard(existing, read_csv(DATA / "signals.csv"), failed_status)
         raise RuntimeError(f"FRED download failed; saved data left unchanged: {errors}")
     rows, revisions, added, changed = merge(existing, incoming, seen_at)
     write_csv(DATA / "observations.csv", FIELDS, rows)
