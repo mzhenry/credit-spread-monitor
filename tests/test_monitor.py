@@ -1,10 +1,13 @@
 import sys
+import io
+import os
 import unittest
 from datetime import date, timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from monitor import SERIES, calculate, merge, is_trading_day
+from monitor import SERIES, calculate, merge, is_trading_day, fetch, fetch_page_update
 
 
 def sample(values, series=SERIES[0]):
@@ -20,6 +23,19 @@ def sample(values, series=SERIES[0]):
 
 
 class SignalsTest(unittest.TestCase):
+    def test_fred_api_observation_and_source_time(self):
+        seen = []
+        def response(request, timeout):
+            seen.append(request.full_url)
+            if "/series/observations?" in request.full_url:
+                return io.BytesIO(b'{"observations":[{"date":"2026-10-22","value":"3.40"},{"date":"2026-10-23","value":"."}]}')
+            return io.BytesIO(b'{"seriess":[{"last_updated":"2026-10-23 08:34:00-05"}]}')
+        with patch.dict(os.environ, {"FRED_API_KEY": "test-secret"}), patch("monitor.urlopen", side_effect=response):
+            self.assertEqual(fetch(SERIES[0], "2026-10-01"), {"2026-10-22": 3.4})
+            self.assertEqual(fetch_page_update(SERIES[0])["utc"], "2026-10-23T13:34:00+00:00")
+        self.assertIn("observation_start=2026-10-01", seen[0])
+        self.assertIn("api_key=test-secret", seen[0])
+
     def test_confirmed_only_after_twenty_later_observations(self):
         vals = list(range(1, 21)) + [30] + list(range(29, 9, -1))
         rows = sample(vals)
