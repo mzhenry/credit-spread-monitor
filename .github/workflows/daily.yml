@@ -1,52 +1,29 @@
-name: 每日信用利差更新
+name: 仪表盘发布（手动更新后）
 on:
-  schedule:
-    # 北京时间 23:30；GitHub Actions 定时启动可能延迟。
-    - cron: '30 15 * * *'
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - data/**
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 concurrency:
-  group: credit-spread-daily
+  group: credit-spread-pages
   cancel-in-progress: false
 jobs:
-  update:
+  publish:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: 校验
-        run: python -m unittest discover -s tests -v
-      - name: 拉取、计算、生成页面
-        id: sync
-        continue-on-error: true
-        env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-        run: python monitor.py sync
-      - name: 提交历史数据和页面
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data index.html
-          if ! git diff --cached --quiet; then
-            git commit -m "Update credit spreads $(date -u +%F)"
-            git push
-          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
       - uses: actions/deploy-pages@v4
         id: deployment
-      - name: 检查数据源结果
-        if: steps.sync.outcome == 'failure'
-        run: exit 1
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
