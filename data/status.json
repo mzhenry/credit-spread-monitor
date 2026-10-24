@@ -1,0 +1,22 @@
+{
+  "checked_utc": "2026-10-24T13:19:22+00:00",
+  "status": "ok",
+  "latest_observation_date": {
+    "BAMLH0A0HYM2": "2026-10-22",
+    "BAMLC0A4CBBB": "2026-10-22"
+  },
+  "new_rows": 0,
+  "revised_rows": 0,
+  "errors": {},
+  "fred_page_updated": {
+    "BAMLH0A0HYM2": {
+      "display": "Oct 23, 2026 8:34 AM CDT",
+      "utc": "2026-10-23T13:34:00+00:00"
+    },
+    "BAMLC0A4CBBB": {
+      "display": "Oct 23, 2026 8:34 AM CDT",
+      "utc": "2026-10-23T13:34:00+00:00"
+    }
+  },
+  "source_update_note": "FRED series-page update time is for the series, not each observation"
+}
