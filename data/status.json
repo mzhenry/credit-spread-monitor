@@ -1,16 +1,19 @@
 {
-  "checked_utc": "2026-10-24T14:06:47+00:00",
-  "status": "failed",
+  "checked_utc": "2026-10-24T14:01:09+00:00",
+  "status": "ok",
   "latest_observation_date": {
     "BAMLH0A0HYM2": "2026-10-22",
     "BAMLC0A4CBBB": "2026-10-22"
   },
   "new_rows": 0,
   "revised_rows": 0,
-  "errors": {
-    "BAMLH0A0HYM2": "FRED request failed (urllib: The read operation timed out; curl: Command '['curl', '--http1.1', '--fail', '--location', '--silent', '--show-error', '--connect-timeout', '10', '--max-time', '25', '--retry', '1', '--user-agent', 'Mozilla/5.0', 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2&cosd=2026-08-23']' returned non-zero exit status 28.)",
-    "BAMLC0A4CBBB": "FRED request failed (urllib: The read operation timed out; curl: Command '['curl', '--http1.1', '--fail', '--location', '--silent', '--show-error', '--connect-timeout', '10', '--max-time', '25', '--retry', '1', '--user-agent', 'Mozilla/5.0', 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLC0A4CBBB&cosd=2026-08-23']' returned non-zero exit status 28.)"
+  "errors": {},
+  "fred_page_updated": {
+    "BAMLH0A0HYM2": null,
+    "BAMLC0A4CBBB": {
+      "display": "Oct 23, 2026 8:34 AM CDT",
+      "utc": "2026-10-23T13:34:00+00:00"
+    }
   },
-  "fred_page_updated": {},
-  "source_update_note": "FRED download failed; saved observations were not treated as new data"
+  "source_update_note": "FRED series-page update time is for the series, not each observation"
 }
