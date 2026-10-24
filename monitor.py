@@ -6,6 +6,7 @@ import argparse
 import csv
 import io
 import json
+import os
 import re
 import subprocess
 from datetime import date as Date, datetime, timezone, timedelta
@@ -61,6 +62,30 @@ def write_csv(path, fields, rows):
 
 
 def fetch(series, start=None):
+    api_key = os.environ.get("FRED_API_KEY", "").strip()
+    if api_key:
+        params = {"series_id": series, "api_key": api_key, "file_type": "json",
+                  "sort_order": "asc", "limit": "100000"}
+        if start:
+            params["observation_start"] = start
+        url = "https://api.stlouisfed.org/fred/series/observations?" + urlencode(params)
+        try:
+            with urlopen(Request(url, headers={"User-Agent": "credit-spread-monitor/1.0"}), timeout=25) as response:
+                payload = json.load(response)
+        except Exception as exc:
+            # The URL contains a secret; never include it in status files or logs.
+            raise RuntimeError(f"FRED API request failed for {series}: {type(exc).__name__}") from None
+        parsed = {}
+        for row in payload.get("observations", []):
+            date, raw = row.get("date"), row.get("value")
+            if date and raw not in (None, "", "."):
+                Date.fromisoformat(date)
+                parsed[date] = float(raw)
+        if not parsed:
+            raise ValueError(f"FRED API returned no valid observations for {series}")
+        return parsed
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        raise RuntimeError("Missing FRED_API_KEY repository secret")
     params = {"id": series}
     if start:
         params["cosd"] = start
@@ -81,6 +106,17 @@ def fetch(series, start=None):
 
 def fetch_page_update(series):
     """Best-effort FRED series-page update time, not a per-observation timestamp."""
+    api_key = os.environ.get("FRED_API_KEY", "").strip()
+    if api_key:
+        url = "https://api.stlouisfed.org/fred/series?" + urlencode(
+            {"series_id": series, "api_key": api_key, "file_type": "json"})
+        try:
+            with urlopen(Request(url, headers={"User-Agent": "credit-spread-monitor/1.0"}), timeout=15) as response:
+                raw = json.load(response)["seriess"][0]["last_updated"]
+            updated = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            return dict(display=raw, utc=updated.astimezone(timezone.utc).isoformat(timespec="seconds"))
+        except Exception:
+            return None
     url = f"https://fred.stlouisfed.org/series/{series}"
     html = get_text(url, timeout=30)
     match = re.search(r'Updated:\s*<span title="([^"]+)"', html)
