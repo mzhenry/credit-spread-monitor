@@ -1,0 +1,45 @@
+name: 每日信用利差更新
+on:
+  schedule:
+    # 北京时间 23:30；GitHub Actions 定时启动可能延迟。
+    - cron: '30 15 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: credit-spread-daily
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 校验
+        run: python -m unittest discover -s tests -v
+      - name: 拉取、计算、生成页面
+        run: python monitor.py sync
+      - name: 提交历史数据和页面
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Update credit spreads $(date -u +%F)"
+            git push
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - uses: actions/deploy-pages@v4
+        id: deployment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
