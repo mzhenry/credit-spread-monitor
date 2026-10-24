@@ -26,6 +26,8 @@ jobs:
       - name: 拉取、计算、生成页面
         id: sync
         continue-on-error: true
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python monitor.py sync
       - name: 提交历史数据和页面
         run: |
