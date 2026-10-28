@@ -1,18 +1,21 @@
 {
-  "checked_utc": "2026-10-24T14:01:09+00:00",
+  "checked_utc": "2026-10-28T11:46:30+00:00",
   "status": "ok",
   "latest_observation_date": {
-    "BAMLH0A0HYM2": "2026-10-22",
-    "BAMLC0A4CBBB": "2026-10-22"
+    "BAMLH0A0HYM2": "2026-10-26",
+    "BAMLC0A4CBBB": "2026-10-26"
   },
-  "new_rows": 0,
+  "new_rows": 4,
   "revised_rows": 0,
   "errors": {},
   "fred_page_updated": {
-    "BAMLH0A0HYM2": null,
+    "BAMLH0A0HYM2": {
+      "display": "Oct 27, 2026 10:13 AM CDT",
+      "utc": "2026-10-27T15:13:00+00:00"
+    },
     "BAMLC0A4CBBB": {
-      "display": "Oct 23, 2026 8:34 AM CDT",
-      "utc": "2026-10-23T13:34:00+00:00"
+      "display": "Oct 27, 2026 10:14 AM CDT",
+      "utc": "2026-10-27T15:14:00+00:00"
     }
   },
   "source_update_note": "FRED series-page update time is for the series, not each observation"
