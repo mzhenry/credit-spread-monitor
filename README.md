@@ -35,9 +35,9 @@ python -m http.server 8000
 
 ## 手动更新与发布
 
-本项目仓库为 [`mzhenry/credit-spread-monitor`](https://github.com/mzhenry/credit-spread-monitor)。GitHub Actions **没有定时任务，也不抓取 FRED 数据**。仓库的 Pages 来源为 GitHub Actions；当手动更新后的 `index.html` 或 `data/` 文件被提交到 `main`，发布工作流只负责把已有页面上线。
+本项目仓库为 [`mzhenry/credit-spread-monitor`](https://github.com/mzhenry/credit-spread-monitor)。GitHub Actions **没有定时任务、自动发布触发器，也不抓取 FRED 数据**。仓库的 Pages 来源为 GitHub Actions；更新后的 `index.html` 和 `data/` 文件提交到 `main` 后，还需手动运行“仪表盘发布（手动更新后）”工作流，页面才会上线。
 
-以后在 Codex 发出“更新信用利差仪表盘”指令即可。更新时运行 `python3 monitor.py sync`，确认两条序列成功下载且测试通过，再把 `data/` 与 `index.html` 更新到本仓库。Pages 随提交发布。若 FRED 没有新观测，检查时间仍会更新，但观测日期和值保持原样。重复执行不会重复观测行，检查日志会如实多记一次。
+以后在 Codex 发出“更新信用利差仪表盘”指令即可。更新时运行 `python3 monitor.py sync`，确认两条序列成功下载且测试通过，再把 `data/` 与 `index.html` 更新到本仓库，最后手动运行发布工作流。若 FRED 没有新观测，检查时间仍会更新，但观测日期和值保持原样。重复执行不会重复观测行，检查日志会如实多记一次。
 
 若手动抓取失败，页面会明确标出失败并保留旧观测，不把旧值冒充新值。项目没有接入可选的 SPX/NDX/QQQ/SOXL，避免增加不同来源与非同步收盘带来的前瞻偏差。
 
